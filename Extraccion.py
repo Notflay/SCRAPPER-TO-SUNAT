@@ -118,24 +118,25 @@ def obtener_datos(contenido_html):
                                             # Domicilio Fiscal
                                             arr_resultado = extraer_contenido_entre_tag(contenido_html, int(arr_resultado[0]), nombre_inicio, nombre_fin)
                                             if arr_resultado:
-                                                oEnSUNAT.DomicilioFiscal = arr_resultado[1].strip()
+                                                oEnSUNAT.DomicilioFiscal = limpiar_espacios(arr_resultado[1].strip())
 
                                                 # Actividad(es) Económica(s)
                                                 nombre_inicio = "<tbody>"
                                                 nombre_fin = "</tbody>"
                                                 arr_resultado = extraer_contenido_entre_tag(contenido_html, int(arr_resultado[0]), nombre_inicio, nombre_fin)
                                                 if arr_resultado:
-                                                    oEnSUNAT.ActividadesEconomicas = arr_resultado[1].replace("\r\n", "").replace("\t", "").strip()
+                                                    oEnSUNAT.ActividadesEconomicas = extraer_comprobantes_pago(arr_resultado[1].replace("\r\n", "").replace("\t", "").strip())
 
                                                     # Comprobantes de Pago c/aut. de impresión (F. 806 u 816)
                                                     arr_resultado = extraer_contenido_entre_tag(contenido_html, int(arr_resultado[0]), nombre_inicio, nombre_fin)
                                                     if arr_resultado:
-                                                        oEnSUNAT.ComprobantesPago = arr_resultado[1].replace("\r\n", "").replace("\t", "").strip()
+                                                        oEnSUNAT.ComprobantesPago = extraer_comprobantes_pago(arr_resultado[1])
 
                                                         # Sistema de Emisión Electrónica
                                                         arr_resultado = extraer_contenido_entre_tag(contenido_html, int(arr_resultado[0]), nombre_inicio, nombre_fin)
                                                         if arr_resultado:
-                                                            oEnSUNAT.SistemaEmisionComprobante = arr_resultado[1].replace("\r\n", "").replace("\t", "").strip()
+                                                            #oEnSUNAT.SistemaEmisionComprobante = arr_resultado[1].replace("\r\n", "").replace("\t", "").strip()
+                                                            oEnSUNAT.SistemaEmisionComprobante = limpiar_espacios(extraer_comprobantes_pago(arr_resultado[1]))
 
                                                             # Afiliado al PLE desde
                                                             nombre_inicio = "<p class=\"list-group-item-text\">"
@@ -149,91 +150,18 @@ def obtener_datos(contenido_html):
                                                                 nombre_fin = "</tbody>"
                                                                 arr_resultado = extraer_contenido_entre_tag(contenido_html, int(arr_resultado[0]), nombre_inicio, nombre_fin)
                                                                 if arr_resultado:
-                                                                    oEnSUNAT.Padrones = arr_resultado[1].replace("\r\n", "").replace("\t", "").strip()
+                                                                    oEnSUNAT.Padrones =  extraer_comprobantes_pago(arr_resultado[1].replace("\r\n", "").replace("\t", "").strip())
 
                                                                     oEnSUNAT.TipoRespuesta = 1
                                                                     oEnSUNAT.MensajeRespuesta = "Ok"
     
     return oEnSUNAT
 
-def obtener_datos2(contenido_html):
-    oEnSUNAT = EnSUNAT()
-    nombre_inicio = "<HEAD><TITLE>"
-    nombre_fin = "</TITLE></HEAD>"
-    contenido_busqueda = extraer_contenido_entre_tag_string(contenido_html, nombre_inicio, nombre_fin)
-    
-    if contenido_busqueda == ".:: Pagina de Mensajes ::.":
-        nombre_inicio = "<p class=\"error\">"
-        nombre_fin = "</p>"
-        oEnSUNAT.TipoRespuesta = 2
-        oEnSUNAT.MensajeRespuesta = extraer_contenido_entre_tag_string(contenido_html, nombre_inicio, nombre_fin)
-    elif contenido_busqueda == ".:: Pagina de Error ::.":
-        nombre_inicio = "<p class=\"error\">"
-        nombre_fin = "</p>"
-        oEnSUNAT.TipoRespuesta = 3
-        oEnSUNAT.MensajeRespuesta = extraer_contenido_entre_tag_string(contenido_html, nombre_inicio, nombre_fin)
-    else:
-        oEnSUNAT.TipoRespuesta = 2
-        nombre_inicio = "<div class=\"list-group\">"
-        nombre_fin = "<div class=\"panel-footer text-center\">"
-        contenido_busqueda = extraer_contenido_entre_tag_string(contenido_html, nombre_inicio, nombre_fin)
-        
-        if contenido_busqueda == "":
-            nombre_inicio = "<strong>"
-            nombre_fin = "</strong>"
-            oEnSUNAT.MensajeRespuesta = extraer_contenido_entre_tag_string(contenido_html, nombre_inicio, nombre_fin)
-            if oEnSUNAT.MensajeRespuesta == "":
-                oEnSUNAT.MensajeRespuesta = "No se encuentra las cabeceras principales del contenido HTML"
-        else:
-            contenido_html = contenido_busqueda
-            oEnSUNAT.MensajeRespuesta = "Mensaje del inconveniente no especificado"
-            nombre_inicio = "<h4 class=\"list-group-item-heading\">"
-            nombre_fin = "</h4>"
-            resultado_busqueda = contenido_html.find(nombre_inicio)
-            
-            if resultado_busqueda > -1:
-                resultado_busqueda += len(nombre_inicio)
-                soup = BeautifulSoup(contenido_html, 'html.parser')
-                # Está mal
-                oEnSUNAT.RazonSocial = soup.find('h4', class_='list-group-item-heading').text.strip() 
-                
-                # Tipo Contribuyente
-                oEnSUNAT.TipoContribuyente = soup.find('p', class_='list-group-item-text').text.strip()
-                
-                # Nombre Comercial
-                oEnSUNAT.NombreComercial = soup.find_all('p', class_='list-group-item-text')[1].text.strip()
-                
-                # Fecha de Inscripción
-                oEnSUNAT.FechaInscripcion = soup.find_all('p', class_='list-group-item-text')[2].text.strip()
-                
-                # Fecha de Inicio de Actividades
-                oEnSUNAT.FechaInicioActividades = soup.find_all('p', class_='list-group-item-text')[3].text.strip()
-                
-                # Estado del Contribuyente
-                oEnSUNAT.EstadoContribuyente = soup.find_all('p', class_='list-group-item-text')[4].text.strip()
-                
-                # Condición del Contribuyente
-                oEnSUNAT.CondicionContribuyente = soup.find_all('p', class_='list-group-item-text')[5].text.strip()
-                
-                # Domicilio Fiscal
-                oEnSUNAT.DomicilioFiscal = soup.find_all('p', class_='list-group-item-text')[6].text.strip()
-                
-                # Actividad(es) Económica(s)
-                oEnSUNAT.ActividadesEconomicas = soup.find('tbody').text.strip()
-                
-                # Comprobantes de Pago c/aut. de impresión (F. 806 u 816)
-                oEnSUNAT.ComprobantesPago = soup.find_all('tbody')[1].text.strip()
-                
-                # Sistema de Emisión Electrónica
-                oEnSUNAT.SistemaEmisionComprobante = soup.find_all('tbody')[2].text.strip()
-                
-                # Afiliado al PLE desde
-                oEnSUNAT.AfiliadoPLEDesde = soup.find_all('p', class_='list-group-item-text')[7].text.strip()
-                
-                # Padrones
-                oEnSUNAT.Padrones = soup.find_all('tbody')[3].text.strip()
-                
-                oEnSUNAT.TipoRespuesta = 1
-                oEnSUNAT.MensajeRespuesta = "Ok"
-    
-    return oEnSUNAT
+
+def limpiar_espacios(texto):
+    return ' '.join(texto.split()).strip()
+
+def extraer_comprobantes_pago(html):
+    soup = BeautifulSoup(html, 'html.parser')
+    comprobantes = [td.get_text(strip=True) for td in soup.find_all('td')]
+    return ', '.join(comprobantes)
