@@ -1,5 +1,6 @@
 import requests
 from bs4 import BeautifulSoup
+from Extraccion import  obtener_datos
 
 def consultar_ruc(ruc):
     url = "https://e-consultaruc.sunat.gob.pe/cl-ti-itmrconsruc/FrameCriterioBusquedaWeb.jsp"
@@ -36,6 +37,8 @@ def consultar_ruc(ruc):
     
     # Solicitud POST
     post_response = session.post(post_url, headers=headers, data=data)
+
+    #print(post_response.content)
     if post_response.status_code != 200:
         return "Error al realizar la solicitud POST"
     
@@ -70,6 +73,11 @@ def consultar_ruc(ruc):
     else:
         print("No se encontró el campo desRuc")
     
+
+    oEnSUNAT = obtener_datos(post_response.text)
+    print(oEnSUNAT.__dict__)
+
+
     return "Solicitud POST realizada con éxito"
     # Extraer el nombre comercial
     # list_group_items = soup.find_all('div', class_='list-group-item')
@@ -83,6 +91,6 @@ def consultar_ruc(ruc):
     # return "Solicitud POST realizada con éxito"
 
 # Ejemplo de uso
-ruc = "20553031002"
+ruc = "20106897914"
 estado_ruc = consultar_ruc(ruc)
-print(estado_ruc)
+#print(estado_ruc)
